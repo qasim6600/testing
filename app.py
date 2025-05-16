@@ -163,6 +163,9 @@ with gr.Blocks() as demo:
 
 app = FastAPI()
 app = gr.mount_gradio_app(app, demo, path="/")
+@app.get("/")
+def read_root():
+    return {"status": "OK"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 80))
