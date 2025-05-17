@@ -122,7 +122,7 @@ def extract_answer(query, text_context, table_context):
 with gr.Blocks() as demo:
     with gr.Column():
         upload = gr.File(label="Upload Manual (PDF)", file_types=[".pdf"])
-        chatbot = gr.Chatbot()
+        chatbot = gr.Chatbot(type="messages")
         query = gr.Textbox(placeholder="Ask your question")
         ask_btn = gr.Button("Ask")
 
@@ -162,11 +162,11 @@ with gr.Blocks() as demo:
     query.submit(handle_query, [query, chatbot], [chatbot, query])
 
 app = FastAPI()
-app = gr.mount_gradio_app(app, demo, path="/")
+app = gr.mount_gradio_app(app, demo, path="/gradio")
 @app.get("/")
 def read_root():
     return {"status": "OK"}
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 80))
-    uvicorn.run(app, host="0.0.0.0", port=80)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
