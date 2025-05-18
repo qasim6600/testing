@@ -104,7 +104,7 @@ def validate_query(query):
 def format_context_chunks(chunks):
     return "\n".join([f"- {chunk}" for chunk in chunks])
 
-ef extract_answer(query, text_context, table_context):
+def extract_answer(query, text_context, table_context):
     try:
         response = client.chat.completions.create(
             model="llama3-70b-8192",
