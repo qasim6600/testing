@@ -143,19 +143,23 @@ with gr.Blocks() as demo:
         }
         return gr.update(visible=True), ""
 
+    
     def handle_query(user_msg, history):
         if 'current' not in manual_data:
-            return history + [(user_msg, "Please upload a manual first.")], ""
+            return history + [{"role": "user", "content": user_msg},
+                              {"role": "assistant", "content": "Please upload a manual first."}], ""
 
         validation = validate_query(user_msg)
         if validation != "Valid Question":
-            return history + [(user_msg, validation)], ""
+            return history + [{"role": "user", "content": user_msg},
+                              {"role": "assistant", "content": validation}], ""
 
         data = manual_data['current']
         top_text_chunks = search_chunks(user_msg, data["text_embeddings"], data["text_chunks"])
         top_table_chunks = search_chunks(user_msg, data["table_embeddings"], data["table_chunks"])
         answer = extract_answer(user_msg, top_text_chunks, top_table_chunks)
-        return history + [(user_msg, answer)], ""
+        return history + [{"role": "user", "content": user_msg},
+                          {"role": "assistant", "content": answer}], ""
 
     upload.change(handle_manual, upload, [ask_btn, chatbot])
     ask_btn.click(handle_query, [query, chatbot], [chatbot, query])
