@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements.txt first to leverage Docker cache
 COPY requirements.txt .
 # Set environment variable for Groq (or handle with a secure method)
-ENV GROQ_API_KEY=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
+ENV api_key=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
 ENV GRADIO_SERVER_PORT=80
 ENV GRADIO_SERVER_NAME=0.0.0.0
 # Install Python dependencies
