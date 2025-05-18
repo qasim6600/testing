@@ -104,7 +104,7 @@ def validate_query(query):
 def format_context_chunks(chunks):
     return "\n".join([f"- {chunk}" for chunk in chunks])
 
-def extract_answer(query, text_context, table_context):
+ef extract_answer(query, text_context, table_context):
     try:
         response = client.chat.completions.create(
             model="llama3-70b-8192",
@@ -116,8 +116,10 @@ def extract_answer(query, text_context, table_context):
             max_tokens=1000
         )
         return response.choices[0].message.content.strip()
-    except Exception:
+    except Exception as e:
+        print("Groq API error:", e)  # <--- SHOW actual error
         return "Sorry, something went wrong."
+
 
 with gr.Blocks() as demo:
     with gr.Column():
