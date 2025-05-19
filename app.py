@@ -120,31 +120,78 @@ def extract_answer(query, text_context, table_context):
         print("Groq API error:", e)  # <--- SHOW actual error
         return "Sorry, something went wrong."
 
+with gr.Blocks(theme=gr.themes.Soft(), css=""".gradio-container {max-width: 100%}.header-container {
+        text-align: center;
+        margin: auto;
+        max-width: 1000px;} """) as demo:
+    with gr.Row(elem_classes=["header-container"]):
+        gr.Markdown("# -- Product ChatBot --")
+    with gr.Row(elem_classes=["header-container"]):
+        gr.Markdown("Upload a PDF manual and ask questions about its content!")
+    
+    with gr.Row():
+        with gr.Column(scale=2):
+            upload = gr.File(label="📤 Upload PDF Manual", 
+                           file_types=[".pdf"],
+                           height="400px")
+            progress_bar = gr.Slider(visible=False, interactive=False, label="Progress")
+            status_text = gr.Textbox(visible=False, label="Status")
+            
+        with gr.Column(scale=8):
+            chatbot = gr.Chatbot(
+                bubble_full_width=False,
+                show_label=False,
+                height=400,
+                avatar_images=(
+                    ("user.png", "assistant.png")  # Add your own avatar images
+                )
+            )
+            query = gr.Textbox(placeholder="Ask your question...", 
+                             show_label=False,
+                             container=False)
+            with gr.Row():
+                ask_btn = gr.Button("Ask 🤖", variant="primary")
+                clear_btn = gr.Button("Clear 🧹")
 
-with gr.Blocks() as demo:
-    with gr.Column():
-        upload = gr.File(label="Upload Manual (PDF)", file_types=[".pdf"])
-        chatbot = gr.Chatbot(type="messages")
-        query = gr.Textbox(placeholder="Ask your question")
-        ask_btn = gr.Button("Ask")
-
+   
     def handle_manual(file):
-        if file is None:
-            return gr.update(visible=False), None
-        normal_text, figure_text, tables = extract_manual_content(file.name)
-        combined_text = normal_text + "\n" + figure_text
-        text_chunks = chunk_text(combined_text)
-        table_chunks = chunk_tables(tables)
-        text_embeddings = model.encode(text_chunks)
-        table_embeddings = model.encode(table_chunks)
-        manual_data['current'] = {
-            "text_chunks": text_chunks,
-            "table_chunks": table_chunks,
-            "text_embeddings": text_embeddings,
-            "table_embeddings": table_embeddings
-        }
-        return gr.update(visible=True), ""
-
+        try:
+            yield {ask_btn: gr.update(visible=False), 
+                  progress_bar: gr.update(visible=True, value=0),
+                  status_text: gr.update(visible=True, value="Starting processing...")}
+        
+            # Stage 1: Extract content
+            normal_text, figure_text, tables = extract_manual_content(file.name)
+            yield {progress_bar: gr.update(value=25),
+                  status_text: "Extracting text and tables..."}
+        
+        # Stage 2: Chunk content
+            combined_text = normal_text + "\n" + figure_text
+            text_chunks = chunk_text(combined_text)
+            table_chunks = chunk_tables(tables)
+            yield {progress_bar: gr.update(value=50),
+                  status_text: "Processing text chunks..."}
+        
+        # Stage 3: Generate embeddings
+            text_embeddings = model.encode(text_chunks)
+            table_embeddings = model.encode(table_chunks)
+            yield {progress_bar: gr.update(value=75),
+                  status_text: "Finalizing embeddings..."}
+        
+            manual_data['current'] = {
+                "text_chunks": text_chunks,
+                "table_chunks": table_chunks,
+                "text_embeddings": text_embeddings,
+                "table_embeddings": table_embeddings
+            }
+        
+            yield {ask_btn: gr.update(visible=True),
+                  progress_bar: gr.update(visible=False),
+                  status_text: gr.update(visible=False)}
+        
+        except Exception as e:
+            yield {progress_bar: gr.update(visible=False),
+                  status_text: f"❌ Error: {str(e)}"}
     
     def handle_query(user_msg, history):
         if 'current' not in manual_data:
@@ -163,7 +210,7 @@ with gr.Blocks() as demo:
         return history + [{"role": "user", "content": user_msg},
                           {"role": "assistant", "content": answer}], ""
 
-    upload.change(handle_manual, upload, [ask_btn, chatbot])
+    upload.change(handle_manual,inputs=upload,outputs=[ask_btn, progress_bar, status_text])
     ask_btn.click(handle_query, [query, chatbot], [chatbot, query])
     query.submit(handle_query, [query, chatbot], [chatbot, query])
 
