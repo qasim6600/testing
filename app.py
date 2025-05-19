@@ -76,7 +76,7 @@ def chunk_tables(tables):
     return table_chunks
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
-client = Groq(api_key="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")
+client = Groq(api_key="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")
 
 manual_data = {}
 
